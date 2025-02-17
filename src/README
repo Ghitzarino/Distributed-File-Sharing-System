@@ -1,0 +1,84 @@
+        -- Tema 2 - APD - Ghita Alexandru - 333CC --
+
+Descriere:
+    Aceasta tema implementeaza un sistem de tip BitTorrent pentru simularea
+incarcarii si descarcarii de fisiere, utilizand biblioteca MPI pentru comunicare
+distribuita si pthread pentru gestionarea operatiilor multi-thread. 
+Programul este structurat in doua componente principale: un tracker centralizat
+si mai multi peers (clienti).
+
+Tracker
+Tracker-ul functioneaza astfel:
+    -Colecteaza informatii despre fisierele detinute de clienti la inceputul
+executiei, dupa care le trimite un ACK pentru a le semnala ca pot continua.
+    -Mentine o lista centralizata de fisiere disponibile in sistem si informatii
+despre swarm-ul asociat fiecarui fisier.
+    -Raspunde cererilor clientilor cu informatii despre swarm-ul asociat unui
+fisier si despre lista de upload-uri (folosita pentru a sorta clientii dupa
+cele mai putine segmente trimise).
+    -Monitorizeaza numarul de segmente incarcate de fiecare client si
+actualizeaza aceasta lista doar atunci cand este ceruta de un client, trimitand
+un mesaj specific la thread-ul de upload al tuturor clientilor (astfel se
+updateaza valoarea chiar si dupa ce threadul de download si-a terminat
+executia), primind inapoi valoarea ceruta.
+    -Notifica clientii cand toti au finalizat descarcarea, inchizand astfel
+programul.
+
+Peer (Client)
+Clientii functioneaza astfel:
+    -Citeste fisierele proprii si pe cele dorite dintr-un fisier de intrare 
+specific (inX.txt, unde X este rank-ul clientului).
+    -Trimite tracker-ului informatii despre fisierele detinute.
+    -Porneste doua thread-uri:
+
+Thread-ul de download:
+    -Solicita tracker-ului informatii despre swarm-ul asociat fisierelor
+dorite si despre lista de upload-uri, informatii care sunt actualizate la
+fiecare 10 segmente descarcate (REQ_SWARM).
+    -Descarca segmentele lipsa de la alti clienti din swarm, luand intai
+pe cei care au mai putine upload-uri, realizand astfel o eficientizare a
+load-ului de cereri asupra clientilor.
+    -Pentru un segment lipsa, trimite un mesaj clientului de la care vrea
+sa descarce semnaland tipul operatiei si hash-ul segmentului, asteptand ca
+raspuns OK daca il are si ERR altfel.
+    -Marcheaza segmentul ca descarcat, il retine in memoria locala clientului
+si continua cu urmatoarele segmente.
+    -La sfarsitul descarcarii unui intreg fisier, salveaza segmentele
+descarcate intr-un fisier local specific.
+    -La sfarsitul descarcarii tuturor fisierelor dorite, notifica trackerul
+si inchide executia thread-ului (CLIENT_FIN).
+
+Thread-ul de upload:
+    -Diferentiaza intre 3 tipuri de mesaje astfel:
+    -REQ_CHUNK: Asculta cererile altor clienti pentru segmente si raspunde in
+functie de disponibilitatea segmentului cerut.
+    -REQ_UPLD_INFO: Notifica tracker-ul despre numarul de segmente uploadate
+de client pana in acel moment.
+    -CLOSE: Inchide rularea thread-ului.
+
+Structuri de date:
+    -SwarmFile: Contine informatii despre un fisier din swarm: nume, numar
+de segmente, hash-uri ale segmentelor si tipurile clientilor din swarm
+(leech sau seed).
+    -FileInfo: Informatii despre fisierele detinute de un client.
+    -ClientUploadInfo: Retine numarul de fisiere uploadate de fiecare 
+client si rangul acestuia, fiind utila pentru sortare.
+
+Functii principale:
+    -read_input_file: Citeste fisierele detinute si dorite dintr-un fisier
+de intrare.
+    -save_file: Salveaza un fisier descarcat local.
+    -add_client_to_swarm: Adauga un client intr-un swarm.
+    -download_thread_func: Gestioneaza procesul de descarcare a fisierelor
+dorite.
+    -upload_thread_func: Raspunde cererilor de segmente de la alti clienti.
+    -tracker: Implementeaza logica pentru gestionarea swarm-urilor si
+comunicarea clienti - tracker.
+    -peer: Initializeaza fisierele clientului, porneste thread-urile
+si comunica cu tracker-ul.
+
+Observatii:
+    -am realizat comunicarea tracker - client sau client - client pe diferite
+tag-uri pentru a asigura faptul ca unele mesaje nu interfera si nu sunt
+receptionate de cine nu trebuie sau cand nu trebuie, stricand flow-ul
+programului.
