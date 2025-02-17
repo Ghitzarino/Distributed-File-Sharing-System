@@ -71,7 +71,8 @@ The system is designed to efficiently distribute file segments among clients, op
 ---
 
 ## How to Run
-- Run the ./run_with_docker.sh or the /checker/checker.sh script.
+1. Use the Makefile (make) inside the /src directory.
+2. Run the ./run_with_docker.sh or the /checker/checker.sh script to test the code or manually run the executable created using the specified format.
 
 ---
 
