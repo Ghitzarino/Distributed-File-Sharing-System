@@ -1,4 +1,4 @@
-# Distributed File Sharing System (DFSS)
+# Distributed File Sharing System
 
 A BitTorrent-like file sharing system implemented in **C**, using **MPI** for distributed communication and **pthread** for multi-threaded operations. This project simulates file uploading and downloading in a peer-to-peer (P2P) network, featuring a centralized tracker and multiple peers (clients).
 
